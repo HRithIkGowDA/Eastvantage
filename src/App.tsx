@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import UserDetails from "./UserDetails";
-import "./styles.css";
+
 
 const App: React.FC = () => {
   const [key, setKey] = useState(0);
