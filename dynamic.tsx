@@ -1,7 +1,7 @@
 import { useMutation } from "@apollo/client";
-import { green } from "@mui/material/colors";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
+import { green } from "@mui/material/colors";
 import makeStyles from "@mui/styles/makeStyles";
 import { fieldValidation, formValidation } from "common/Validations";
 import Button from "components/Button";
@@ -10,20 +10,8 @@ import React, { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "reducers";
-import {
-  ADD_NOTIFICATION,
-  getFields,
-  IForm,
-  INotificationFields,
-  INotificationTemplate,
-  SET_SELECTED_NOTIFICATION,
-  UPDATE_NOTIFICATION
-} from "./Fields";
-import {
-  CREATE_NOTIFICATION_TEMPLATE,
-  GET_NOTIFICATION_TEMPLATES,
-  UPDATE_NOTIFICATION_TEMPLATE
-} from "./GraphQL";
+import { ADD_NOTIFICATION, IForm, INotificationFields, INotificationTemplate, SET_SELECTED_NOTIFICATION, UPDATE_NOTIFICATION, getFields } from "./Fields";
+import { CREATE_NOTIFICATION_TEMPLATE, GET_NOTIFICATION_TEMPLATES, UPDATE_NOTIFICATION_TEMPLATE } from "./GraphQL";
 import HighlightHTML from "./highlightHTML";
 
 const useStyles = makeStyles(theme => ({
@@ -67,40 +55,21 @@ const Form = (props: IForm) => {
   const formFields = getFields(currentRecord);
   const [record, setRecord] = useState<INotificationFields[]>(formFields);
   const [loading, setLoading] = useState<boolean>(false);
-  const { loggedInUserEmail } = useSelector(
-    (state: RootState) => state.dashboardReducer
-  );
+  const { loggedInUserEmail } = useSelector((state: RootState) => state.dashboardReducer);
   const addToCache = (cache: any, { data }: any) => {
-    const exisitingNotifications = cache.readQuery({
-      query: GET_NOTIFICATION_TEMPLATES
-    });
+    const exisitingNotifications = cache.readQuery({ query: GET_NOTIFICATION_TEMPLATES });
     const newData = data.createNotificationTemplate;
     const updatedData = {
-      notificationTemplates: [
-        { ...newData, updatedAt: new Date() },
-        ...exisitingNotifications.notificationTemplates.notificationTemplates
-      ]
+      notificationTemplates: [{ ...newData, updatedAt: new Date() }, ...exisitingNotifications.notificationTemplates.notificationTemplates]
     };
-    cache.writeQuery({
-      query: GET_NOTIFICATION_TEMPLATES,
-      data: updatedData
-    });
+    cache.writeQuery({ query: GET_NOTIFICATION_TEMPLATES, data: updatedData });
   };
   const [add] = useMutation(CREATE_NOTIFICATION_TEMPLATE, {
     update: addToCache,
     onCompleted({ createNotificationTemplate }) {
       closeSnackbar(snackbarKey);
-      dispatch({
-        type: ADD_NOTIFICATION,
-        payload: {
-          id: createNotificationTemplate.id,
-          updatedAt: new Date(),
-          ...notification
-        }
-      });
-      enqueueSnackbar("Saved successfully", {
-        variant: "success"
-      });
+      dispatch({ type: ADD_NOTIFICATION, payload: { id: createNotificationTemplate.id, updatedAt: new Date(), ...notification } });
+      enqueueSnackbar("Saved successfully", { variant: "success" });
       setRecord(formFields);
       setLoading(true);
       props.handleClose();
@@ -111,30 +80,18 @@ const Form = (props: IForm) => {
     }
   });
   const updateToCache = (cache: any, { data }: any) => {
-    const existingNotifications = cache.readQuery({
-      query: GET_NOTIFICATION_TEMPLATES
-    });
+    const existingNotifications = cache.readQuery({ query: GET_NOTIFICATION_TEMPLATES });
     const existingFormsData = existingNotifications.notificationTemplates;
     const updatedNotification = {
       notificationTemplates: {
         ...existingFormsData,
-        notificationTemplates: existingFormsData.notificationTemplates.map(
-          (each: INotificationTemplate) =>
-            each.id === data.updateNotificationTemplate
-              ? {
-                  ...each,
-                  ...notification,
-                  updatedAt: new Date(),
-                  updatedBy: { name: loggedInUserEmail }
-                }
-              : each
+        notificationTemplates: existingFormsData.notificationTemplates.map((each: INotificationTemplate) => each.id === data.updateNotificationTemplate
+          ? { ...each, ...notification, updatedAt: new Date(), updatedBy: { name: loggedInUserEmail } }
+          : each
         )
       }
     };
-    cache.writeQuery({
-      query: GET_NOTIFICATION_TEMPLATES,
-      data: updatedNotification
-    });
+    cache.writeQuery({ query: GET_NOTIFICATION_TEMPLATES, data: updatedNotification });
     return updatedNotification;
   };
 
@@ -142,24 +99,9 @@ const Form = (props: IForm) => {
     update: updateToCache,
     onCompleted() {
       closeSnackbar(snackbarKey);
-      dispatch({
-        type: UPDATE_NOTIFICATION,
-        payload: {
-          id: currentRecord.id,
-          notification: {
-            ...notification,
-            updatedAt: new Date(),
-            updatedBy: { name: loggedInUserEmail }
-          }
-        }
-      });
-      enqueueSnackbar("Updated", {
-        variant: "success"
-      });
-      dispatch({
-        type: SET_SELECTED_NOTIFICATION,
-        payload: ""
-      });
+      dispatch({ type: UPDATE_NOTIFICATION, payload: { id: currentRecord.id, notification: { ...notification, updatedAt: new Date(), updatedBy: { name: loggedInUserEmail } } } });
+      enqueueSnackbar("Updated", { variant: "success" });
+      dispatch({ type: SET_SELECTED_NOTIFICATION, payload: "" });
       setLoading(false);
       props.handleClose();
     },
@@ -169,10 +111,7 @@ const Form = (props: IForm) => {
     }
   });
 
-  const handleInputChange = (
-    field: string,
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputChange = (field: string, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const formFields = record.map((input: INotificationFields) => {
       if (input.name === field) {
         input.value = e.target.value;
@@ -182,14 +121,7 @@ const Form = (props: IForm) => {
     setRecord(formFields);
   };
 
-  const getRecord = () => {
-    const object = record.reduce(
-      (obj: Object, item: INotificationFields) =>
-        Object.assign(obj, { [item.name]: item.value }),
-      {}
-    );
-    return object;
-  };
+  const getRecord = () => record.reduce((obj: Object, item: INotificationFields) => Object.assign(obj, { [item.name]: item.value }), {});
 
   const notification = getRecord();
 
@@ -197,48 +129,22 @@ const Form = (props: IForm) => {
     setRecord(formValidation(record));
     if (record.filter(field => field.error === true).length === 0) {
       setLoading(true);
-      snackbarKey = enqueueSnackbar(t("common:snackbar.saving"), {
-        variant: "info",
-        persist: true
-      });
+      snackbarKey = enqueueSnackbar(t("common:snackbar.saving"), { variant: "info", persist: true });
       try {
-        add({
-          variables: {
-            input: {
-              name: notification.name,
-              type: notification.type,
-              subject: notification.subject,
-              content: notification.content,
-              language: notification.language
-            }
-          }
-        });
+        add({ variables: { input: { name: notification.name, type: notification.type, subject: notification.subject, content: notification.content, language: notification.language } } });
       } catch (e) {
         console.error("=> addRecord : ", e);
       }
     }
   };
+
   const updateRecord = (e: React.MouseEvent) => {
     setRecord(formValidation(record));
     if (record.filter(field => field.error === true).length === 0) {
       setLoading(true);
-      snackbarKey = enqueueSnackbar("Updating...", {
-        variant: "info",
-        persist: true
-      });
+      snackbarKey = enqueueSnackbar("Updating...", { variant: "info", persist: true });
       try {
-        update({
-          variables: {
-            id: currentRecord.id,
-            input: {
-              name: notification.name,
-              type: notification.type,
-              subject: notification.subject,
-              content: notification.content,
-              language: notification.language
-            }
-          }
-        });
+        update({ variables: { id: currentRecord.id, input: { name: notification.name, type: notification.type, subject: notification.subject, content: notification.content, language: notification.language } } });
       } catch (e) {
         console.error("=> updateRecord : ", e);
         props.handleClose();
@@ -249,81 +155,26 @@ const Form = (props: IForm) => {
   return (
     <Fragment>
       <Grid container spacing={1}>
-        {record
-          .filter(
-            (data: INotificationFields) =>
-              data.label.toLowerCase() === "content"
-          )
-          .map((data: INotificationFields, index: number) => (
-            <Grid item key={`${index}`} xs={12}>
-              <HighlightHTML
-                data={data}
-                handleInputChange={handleInputChange}
-                setRecord={setRecord}
-                record={record}
-                fieldValidation={fieldValidation}
-              />
-            </Grid>
-          ))}
-        {record
-          .filter(
-            (data: INotificationFields) =>
-              data.label.toLowerCase() !== "content"
-          )
-          .map((data: INotificationFields, index: number) => (
-            <Grid item key={`${index}`} xs={4}>
-              <TextField
-                variant="standard"
-                fullWidth
-                required={data.required}
-                error={data.error}
-                margin="dense"
-                name={data.name}
-                label={data.label}
-                type={data.type}
-                onChange={event => handleInputChange(data.name, event)}
-                value={data.value}
-                onBlur={event =>
-                  setRecord(fieldValidation(record, data.name, event))
-                }
-                helperText={data.error_message}
-              />
-            </Grid>
-          ))}
+        {record.filter((data: INotificationFields) => data.label.toLowerCase() === "content").map((data: INotificationFields, index: number) => (
+          <Grid item key={`${index}`} xs={12}>
+            <HighlightHTML data={data} handleInputChange={handleInputChange} setRecord={setRecord} record={record} fieldValidation={fieldValidation} />
+          </Grid>
+        ))}
+        {record.filter((data: INotificationFields) => data.label.toLowerCase() !== "content").map((data: INotificationFields, index: number) => (
+          <Grid item key={`${index}`} xs={4}>
+            <TextField variant="standard" fullWidth required={data.required} error={data.error} margin="dense" name={data.name} label={data.label} type={data.type} onChange={event => handleInputChange(data.name, event)} value={data.value} onBlur={event => setRecord(fieldValidation(record, data.name, event))} helperText={data.error_message} />
+          </Grid>
+        ))}
       </Grid>
-      <Grid
-        container
-        spacing={1}
-        style={{ justifyContent: "flex-end", marginTop: 4 }}
-      >
+      <Grid container spacing={1} style={{ justifyContent: "flex-end", marginTop: 4 }}>
         {props.action === "add" ? (
           <Grid item className={classes.wrapper}>
-            <Button
-              id="notificationAddForm"
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={addRecord}
-              disabled={loading}
-              loading={loading}
-            >
-              Add
-            </Button>
+            <Button id="notificationAddForm" variant="contained" color="primary" size="small" onClick={addRecord} disabled={loading} loading={loading}>Add</Button>
           </Grid>
         ) : (
           <Fragment>
             <Grid item className={classes.wrapper}>
-              <Button
-                id="notificationUpdateForm"
-                className={classes.buttonBase}
-                variant="contained"
-                size="small"
-                disabled={loading}
-                onClick={updateRecord}
-                loading={loading}
-              >
-                Update
-              </Button>
+              <Button id="notificationUpdateForm" className={classes.buttonBase} variant="contained" size="small" disabled={loading} onClick={updateRecord} loading={loading}>Update</Button>
             </Grid>
           </Fragment>
         )}
