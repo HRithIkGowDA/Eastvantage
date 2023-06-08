@@ -15,7 +15,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "reducers";
 import { generateCSV } from "../../common/util";
-import { IexistingFormData, IList, ISalesRep } from "./Fields";
+import { IList, ISalesRep, IexistingFormData } from "./Fields";
 import Form from "./Form";
 import { DELETE_SALES_REP, GET_SALES_REP } from "./GraphQL";
 
@@ -23,51 +23,35 @@ const SalesRep = () => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const dispatch = useDispatch();
   const isVisible = useResourceVisibility();
-  const currentRecord = useSelector<RootState, ISalesRep>(
-    state => state.salesRepReducer.selectedSalesRep
-  );
-  const salesReps = useSelector<RootState, ISalesRep[]>(
-    state => state.salesRepReducer.salesReps
-  );
-  const selectedRecord = useSelector<RootState>(
-    state => state.salesRepReducer.selected
-  );
-  const selectedID = useSelector<RootState, string>(
-    state => state.salesRepReducer.selected.id
-  );
-  const selectedElements = useSelector<RootState, HTMLElement[]>(
-    state => state.salesRepReducer.selected.elements
-  );
-  const { rowsPerPage, downloadFlag, title } = useSelector(
-    (state: RootState) => state.dashboardReducer
-  );
+  const currentRecord = useSelector<RootState, ISalesRep>(state => state.salesRepReducer.selectedSalesRep);
+  const salesReps = useSelector<RootState, ISalesRep[]>(state => state.salesRepReducer.salesReps);
+  const selectedRecord = useSelector<RootState>(state => state.salesRepReducer.selected);
+  const selectedID = useSelector<RootState, string>(state => state.salesRepReducer.selected.id);
+  const selectedElements = useSelector<RootState, HTMLElement[]>(state => state.salesRepReducer.selected.elements);
+  const { rowsPerPage, downloadFlag, title } = useSelector((state: RootState) => state.dashboardReducer);
   const [loading, setLoading] = useState<boolean>(true);
-  const [records, setRecords] = useState<ISalesRep[]>([]);
+  const [records, setRecords] = useState<ISalesRep[]>(salesReps);
   const [deleteOpen, setDeleteOpen] = useState<boolean>(false);
   const [editOpen, setEditOpen] = useState<boolean>(false);
   const [addOpen, setAddOpen] = useState<boolean>(false);
   const [total, setTotal] = useState(0);
   const [originTotal, setoriginTotal] = useState(0);
   const [upload, setUpload] = useState<boolean>(false);
-  const searchTerm = useSelector(
-    (state: RootState) => state.dashboardReducer.searchTerm
-  );
+  const searchTerm = useSelector((state: RootState) => state.dashboardReducer.searchTerm);
   const [page, setPage] = useState(0);
   let snackbarKey: number | string;
 
   useEffect(() => {
     setRecords(salesReps);
   }, [salesReps]);
+
   const [getSalesRep] = useLazyQuery(GET_SALES_REP, {
     fetchPolicy: "cache-and-network",
     onCompleted({ salesRepBackups }) {
       let updatedReps = salesReps;
       if (updatedReps.length > 0) {
         salesRepBackups.salesRepBackups.forEach((each: IexistingFormData) => {
-          const index = updatedReps.filter(
-            (rep: ISalesRep) => rep.id === each.id
-          );
-
+          const index = updatedReps.filter((rep: ISalesRep) => rep.id === each.id);
           if (index.length === 0) updatedReps = [...updatedReps, each];
         });
       } else {
@@ -77,16 +61,12 @@ const SalesRep = () => {
       setLoading(false);
       setTotal(salesRepBackups.total);
       setoriginTotal(salesRepBackups.total);
-      dispatch({
-        type: "SET_SALES_REP",
-        payload: updatedReps
-      });
+      dispatch({ type: "SET_SALES_REP", payload: updatedReps });
     },
     onError() {
       setLoading(false);
     }
   });
-
   useEffect(() => {
     getSalesRep({
       variables: {
@@ -94,18 +74,12 @@ const SalesRep = () => {
         limit: rowsPerPage
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, rowsPerPage]);
-
   useEffect(() => {
     if (downloadFlag) {
       generateCSV(records, title);
-      dispatch({
-        type: "SET_DOWNLOAD_FLAG",
-        payload: false
-      });
+      dispatch({ type: "SET_DOWNLOAD_FLAG", payload: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [downloadFlag]);
 
   const handleChangePage = (page: number) => {
@@ -125,12 +99,9 @@ const SalesRep = () => {
     const updatedData = {
       salesRepBackups: {
         total: existingData.salesRepBackups.total - 1,
-        salesRepBackups: existingFormData.filter(
-          (each: IexistingFormData) => each.id !== data.deleteSalesRepBackup
-        )
+        salesRepBackups: existingFormData.filter((each: IexistingFormData) => each.id !== data.deleteSalesRepBackup)
       }
     };
-
     cache.writeQuery({
       query: GET_SALES_REP,
       variables: {
@@ -148,9 +119,7 @@ const SalesRep = () => {
       closeSnackbar(snackbarKey);
       setRecords(salesReps.filter(rep => rep.id !== deleteSalesRepBackup));
       dispatch({ type: "DELETE_SALES_REP", payload: deleteSalesRepBackup });
-      enqueueSnackbar("Deleted", {
-        variant: "success"
-      });
+      enqueueSnackbar("Deleted", { variant: "success" });
       handleClose();
       selectedElements.forEach((element: HTMLElement) => {
         element.style.opacity = "1";
@@ -161,19 +130,13 @@ const SalesRep = () => {
       selectedElements.forEach((element: HTMLElement) => {
         element.style.opacity = "1";
       });
-      dispatch({
-        type: "SET_SELECTED_SALES_REP",
-        payload: { id: "", elements: [] }
-      });
+      dispatch({ type: "SET_SELECTED_SALES_REP", payload: { id: "", elements: [] } });
       closeSnackbar(snackbarKey);
     }
   });
 
   const handleDelete = (id: string, element: HTMLElement) => {
-    snackbarKey = enqueueSnackbar("Deleting...", {
-      variant: "info",
-      persist: true
-    });
+    snackbarKey = enqueueSnackbar("Deleting...", { variant: "info", persist: true });
     dispatch({
       type: "SET_SELECTED_SALES_REP",
       payload: {
@@ -191,6 +154,7 @@ const SalesRep = () => {
       console.error("=> handleDelete : ", e);
     }
   };
+
   const handleEditClick = (record: ISalesRep) => {
     setEditOpen(true);
     dispatch({
@@ -198,6 +162,7 @@ const SalesRep = () => {
       payload: record
     });
   };
+
   const openDeleteConfirmation = (id: string, element: HTMLElement) => {
     setDeleteOpen(true);
     dispatch({
@@ -205,9 +170,11 @@ const SalesRep = () => {
       payload: { id, elements: [...selectedElements, element] }
     });
   };
+
   const handleAddOpen = () => {
     setAddOpen(true);
   };
+
   const handleClose = () => {
     setAddOpen(false);
     setEditOpen(false);
@@ -223,10 +190,7 @@ const SalesRep = () => {
     });
   };
 
-  const view = useSelector<RootState, string>(
-    state => state.dashboardReducer.view
-  );
-
+  const view = useSelector<RootState, string>(state => state.dashboardReducer.view);
   useEffect(() => {
     setTotal(total);
     const fuse = new Fuse(records, {
@@ -244,13 +208,11 @@ const SalesRep = () => {
       setRecords(source);
       setTotal(total);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rowsPerPage, total, originTotal, records.length, searchTerm]);
 
   const handleUploadOpen = () => {
     setUpload(true);
   };
-
   return (
     <Fragment>
       <Grid container>
@@ -267,7 +229,7 @@ const SalesRep = () => {
               tableHeader={["salesRepEmail", "backupEmail"]}
               title="Sales Rep"
               handleChangePage={handleChangePage}
-              maxWidth="false"
+              maxWidth={false}
             />
           ) : !loading ? (
             <Tile
@@ -327,5 +289,4 @@ const SalesRep = () => {
     </Fragment>
   );
 };
-
 export default SalesRep;
